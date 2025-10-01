@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Product Showcase — Simple E‑Commerce Gallery</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1320; --muted:#94a3b8; --accent:#06b6d4; --glass: rgba(255,255,255,0.04);
+      --radius:12px; --gap:18px; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --star-color:#ffc107; /* New color for stars */
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#071025 0%,#071b2e 100%);color:#e6eef8;min-height:100vh;padding:32px}
+
+    .container{max-width:1200px;margin:0 auto}
+    header{display:flex;align-items:center;gap:16px;justify-content:space-between;margin-bottom:20px}
+    header h1{font-size:20px;margin:0}
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    .search{display:flex;align-items:center;background:var(--glass);padding:8px 10px;border-radius:10px;gap:8px}
+    .search input{background:transparent;border:0;color:inherit;outline:none;width:220px}
+    .filters{display:flex;gap:8px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer;font-size:13px}
+    .btn.active{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#042027;border:none}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:22px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:14px;border-radius:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6);cursor:pointer;transition:transform .18s}
+    .card:hover{transform:translateY(-6px)}
+    .thumb{height:150px;border-radius:10px;background:#0b1220;display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden}
+    .thumb img{max-width:100%;max-height:100%;object-fit:cover}
+    .meta{display:flex;align-items:center;justify-content:space-between}
+    .title{font-weight:600;font-size:15px}
+    .price{font-weight:700;color:var(--accent)}
+    .tags{margin-top:8px;color:var(--muted);font-size:13px}
+    /* New: Card Rating Style */
+    .card-rating{color:var(--star-color);font-size:13px;margin-top:4px}
+
+
+    /* Empty state */
+    .empty{padding:40px;text-align:center;color:var(--muted)}
+
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.7),rgba(2,6,23,0.85));display:none;align-items:center;justify-content:center;padding:28px}
+    .modal{width:100%;max-width:900px;background:linear-gradient(180deg,#041022 0%,#061428 100%);border-radius:14px;padding:18px;box-shadow:0 30px 80px rgba(2,6,23,0.8)}
+    .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .modal h2{margin:0}
+    .close{background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+    .buy{margin-top:10px;padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),#60a5fa);color:#011018;cursor:pointer;font-weight:700}
+
+    /* New: Review Styles */
+    .reviews-section{margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.06)}
+    .review-item{background:var(--card);padding:12px;border-radius:10px;margin-bottom:10px}
+    .review-header{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+    .review-user{font-weight:600;color:var(--accent)}
+    .review-rating{color:var(--star-color);font-size:13px}
+    .review-comment{margin-top:6px;font-size:14px;color:#e6eef8;white-space:pre-wrap;} /* Added pre-wrap for textarea newlines */
+    .review-list{max-height:300px;overflow-y:auto;padding-right:10px}
+
+    .review-form h4{margin-top:0}
+    .review-form input, .review-form textarea{
+        width:100%; padding:10px; margin-bottom:10px; border-radius:8px;
+        background:var(--glass); border:1px solid rgba(255,255,255,0.06);
+        color:inherit; resize:vertical
+    }
+    .rating-input {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .rating-input input {
+      display: none;
+    }
+
+    .rating-input label {
+      cursor: pointer;
+      font-size: 24px;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    .rating-input input:checked ~ label,
+    .rating-input label:hover,
+    .rating-input label:hover ~ label {
+      color: var(--star-color);
+    }
+    .review-submit-btn{
+        padding:8px 12px; border-radius:8px; border:0;
+        background:var(--accent); color:#011018; font-weight:600; cursor:pointer;
+    }
+
+    @media (max-width:780px){
+      .modal-grid{grid-template-columns:1fr}
+      .search input{width:120px}
+    }
+
+    /* small utilities */
+    .muted{color:var(--muted)}
+    .sw-embed{width:100%;height:320px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>NEXA</h1>
+        <p class="muted">"Next-Gen Shopper's Stop"</p>
+      </div>
+      <div class="controls">
+        <div class="search" role="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <input id="search" placeholder="Search products..." />
+        </div>
+
+        <div class="filters" id="filters" role="toolbar"></div>
+      </div>
+    </header>
+
+    <main>
+      <div id="grid" class="grid" aria-live="polite"></div>
+      <div id="empty" class="empty" style="display:none">No products match your search or filter.</div>
+    </main>
+  </div>
+
+  <div id="backdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 id="modal-title">Product</h2>
+        <button class="close" id="closeModal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-grid">
+        <div>
+          <div class="sw-embed">
+            <div class="swiper" id="swiper-root">
+              <div class="swiper-wrapper" id="swiper-wrapper"></div>
+              <div class="swiper-pagination"></div>
+              <div class="swiper-button-prev" aria-hidden></div>
+              <div class="swiper-button-next" aria-hidden></div>
+            </div>
+          </div>
+          <button class="buy" id="buyBtn">Add to cart</button>
+
+          <div class="reviews-section">
+            <h3>Customer Reviews</h3>
+            <div id="review-list" class="review-list">
+              </div>
+          </div>
+        </div>
+        <div>
+          <div id="modal-body">
+            <p id="modal-desc" class="muted"></p>
+            <p style="margin-top:8px"><strong>Price: </strong><span id="modal-price" class="price"></span></p>
+            <p class="tags" id="modal-cats"></p>
+            <p><strong>Average Rating: </strong><span id="modal-avg-rating" style="color:var(--star-color)"></span></p>
+
+            <div class="review-form">
+                <h4>Write a Review</h4>
+                <form id="review-form">
+                    <input type="text" id="review-user" placeholder="Your Name" required />
+                    <div class="rating-input">
+                        <input type="radio" id="star5" name="rating" value="5" required /><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                    </div>
+                    <textarea id="review-comment" placeholder="Your comments (optional)"></textarea>
+                    <button type="submit" class="review-submit-btn">Submit Review</button>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+  <script>
+    // ====== SAMPLE PRODUCTS (edit these) ======
+   // ====== SAMPLE PRODUCTS (edit these) ======
+    const products = [
+      {id:1,title:'Handmade Leather Wallet',price:'₹1,199',categories:['Accessories','Leather'],desc:'Slim, full-grain leather wallet handcrafted with clean stitching.',images:['https://encrypted-tbn1.gstatic.com/shopping?q=tbn:ANd9GcRB8_iwOyvSNY59CLXM2syu-C1VEI7wGRuw2eGBYEo3ba7Fv8vy-82eBZaYGHUPC0nN73bAp51Q_dZd7ogfR2FyLAeiDsyZxQ1n77FU6Sdk'], reviews:[]},
+      {id:2,title:'Ceramic Coffee Mug',price:'₹499',categories:['Home','Kitchen'],desc:'Stoneware mug, 350ml. Microwave & dishwasher safe.',images:['https://images.unsplash.com/photo-1511920170033-f8396924c348?w=1200&auto=format&fit=crop&q=60'], reviews:[{user:'Alice',rating:5,comment:'Love this mug, perfect size!'}, {user:'Bob',rating:4,comment:'Good quality, but a little heavy.'}]},
+      {id:3,title:'Minimal Backpack',price:'₹3,299',categories:['Bags','Travel'],desc:'Water-resistant daily backpack with laptop sleeve.',images:['https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&auto=format&fit=crop&q=60'], reviews:[{user:'Dave',rating:5,comment:'Perfect for daily commute. Lots of space.'}]},
+      {id:4,title:'Soy Candle — Sandalwood',price:'₹399',categories:['Home','Aromatherapy'],desc:'Long-burning soy candle with natural sandalwood fragrance.',images:['https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200&auto=format&fit=crop&q=60'], reviews:[]},
+      {id:5,title:'Organic Cotton T‑shirt',price:'₹699',categories:['Clothing'],desc:'Soft organic cotton tee — breathable and durable.',images:['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=1200&auto=format&fit=crop&q=60'], reviews:[{user:'Clara',rating:5,comment:'My favorite T-shirt! The cotton is so soft.'}, {user:'Gita',rating:4,comment:'Fits well, but the color is slightly darker than expected.'}]},
+      
+      // === NEW PRODUCTS ADDED BELOW ===
+      {id:6,title:'Noise-Cancelling Headphones',price:'₹8,999',categories:['Electronics','Accessories'],desc:'Premium over-ear headphones with 30-hour battery life.',images:['https://www.familyhandyman.com/wp-content/uploads/2021/04/61xwwOcrgoL._AC_SL1388_.jpg?fit=696'], reviews:[{user:'Rajesh',rating:5,comment:'Amazing sound and the noise cancellation is superb!'}]},
+      {id:7,title:'Portable Bluetooth Speaker',price:'₹1,999',categories:['Electronics'],desc:'Waterproof and rugged speaker perfect for outdoor use.',images:['https://m.media-amazon.com/images/I/81uJyMRONOL.jpg'], reviews:[{user:'Sonu',rating:3,comment:'Volume is good, but bass is a bit weak.'}]},
+      {id:8,title:'Stainless Steel Water Bottle',price:'₹599',categories:['Kitchen','Travel'],desc:'Insulated bottle keeps drinks cold for 24 hours.',images:['https://th.bing.com/th/id/OIP.QEtxLTOf4ra-oxBAXW6klwHaHa?w=192&h=192&c=7&r=0&o=5&dpr=1.3&pid=1.7'], reviews:[]},
+      {id:9,title:'Wool Blend Beanie',price:'₹899',categories:['Clothing','Accessories'],desc:'Warm, comfortable, and stylish knitted beanie.',images:['https://www.voguegadget.com/wp-content/uploads/2023/05/45fc0fcc96ec5b6e2ac57e4eaaa7dad3.jpg'], reviews:[{user:'Priya',rating:5,comment:'Super warm and soft. Great purchase for winter.'}, {user:'Kiran',rating:5,comment:'My head is very happy!'}]},
+      {id:10,title:'Wooden Desk Organizer',price:'₹1,499',categories:['Home','Office'],desc:'Keep your workspace tidy with this elegant bamboo organizer.',images:['https://images-na.ssl-images-amazon.com/images/I/610ZNCJlb%2BL._AC_SL1000_.jpg'], reviews:[{user:'Vikram',rating:4,comment:'Looks great on my desk. Assembly was easy.'}]},
+    ];
+
+
+    // Helper to calculate average rating and render stars
+    function getAverageRating(product) {
+        if (!product.reviews || product.reviews.length === 0) return {avg: 0, stars: 'No ratings yet'};
+        const totalRating = product.reviews.reduce((sum, r) => sum + r.rating, 0);
+        const avg = totalRating / product.reviews.length;
+        const fullStars = Math.floor(avg);
+        const hasHalfStar = avg % 1 >= 0.5;
+
+        let starsHtml = '';
+        for (let i = 0; i < 5; i++) {
+            if (i < fullStars) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            } else if (i === fullStars && hasHalfStar) {
+                starsHtml += '<i class="fas fa-star-half-alt"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star"></i>';
+            }
+        }
+        return {avg: avg.toFixed(1), stars: starsHtml};
+    }
+
+    // ====== Build category buttons ======
+    const filtersEl = document.getElementById('filters');
+    const categories = Array.from(new Set(products.flatMap(p=>p.categories)));
+    const allBtn = document.createElement('button'); allBtn.className='btn active'; allBtn.textContent='All'; allBtn.dataset.cat='all'; filtersEl.appendChild(allBtn);
+    categories.forEach(cat=>{const b=document.createElement('button');b.className='btn';b.textContent=cat;b.dataset.cat=cat;filtersEl.appendChild(b)});
+
+    // ====== Render grid ======
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
+    function render(list){
+      grid.innerHTML='';
+      if(list.length===0){empty.style.display='block';return} else empty.style.display='none';
+      list.forEach(p=>{
+        const card=document.createElement('article');card.className='card';card.tabIndex=0;card.setAttribute('data-id',p.id);
+        const rating = getAverageRating(p); // Get rating data
+        card.innerHTML=`
+          <div class="thumb" aria-hidden><img src="${p.images[0]}" alt="${p.title}" loading="lazy"/></div>
+          <div class="meta"><div class="title">${p.title}</div><div class="price">${p.price}</div></div>
+          <div class="card-rating">${rating.stars} (${rating.avg})</div>
+          <div class="tags">${p.categories.join(' • ')}</div>
+        `;
+        card.addEventListener('click',()=>openModal(p.id));
+        card.addEventListener('keydown',e=>{ if(e.key==='Enter') openModal(p.id)});
+        grid.appendChild(card);
+      })
+    }
+
+    render(products);
+
+    // ====== Filtering logic ======
+    let activeCat='all';
+    document.getElementById('search').addEventListener('input',applyFilters);
+    filtersEl.addEventListener('click',e=>{
+      const b=e.target.closest('button'); if(!b) return;
+      Array.from(filtersEl.children).forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      activeCat=b.dataset.cat; applyFilters();
+    });
+
+    function applyFilters(){
+      const q=document.getElementById('search').value.trim().toLowerCase();
+      let list = products.filter(p=>{
+        const matchesQ = !q || (p.title+p.desc+(p.categories||[]).join(' ')).toLowerCase().includes(q);
+        const matchesCat = activeCat==='all' || (p.categories||[]).includes(activeCat);
+        return matchesQ && matchesCat;
+      });
+      render(list);
+    }
+
+    // ====== Modal & Swiper integration ======
+    const backdrop = document.getElementById('backdrop');
+    const closeModalBtn = document.getElementById('closeModal');
+    let swiperInstance = null;
+    let currentProductId = null; // Store the ID of the product currently in the modal
+
+    function renderReviews(product) {
+        const reviewListEl = document.getElementById('review-list');
+        const reviews = product.reviews || [];
+        reviewListEl.innerHTML = ''; // Clear previous reviews
+
+        if (reviews.length === 0) {
+            reviewListEl.innerHTML = `<p class="muted">No customer reviews yet. Be the first!</p>`;
+            return;
+        }
+
+        reviews.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'review-item';
+
+            // Function to generate star icons for a rating
+            const getStars = (rating) => {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    stars += `<i class="fa-star ${i <= rating ? 'fas' : 'far'}"></i>`;
+                }
+                return stars;
+            };
+
+            item.innerHTML = `
+                <div class="review-header">
+                    <span class="review-user">${r.user}</span>
+                    <span class="review-rating">${getStars(r.rating)}</span>
+                </div>
+                ${r.comment ? `<p class="review-comment">${r.comment}</p>` : ''}
+            `;
+            reviewListEl.appendChild(item);
+        });
+
+        // Scroll to the top of the review list
+        reviewListEl.scrollTop = 0;
+    }
+
+    function openModal(id){
+      const p = products.find(x=>x.id==id); if(!p) return;
+      currentProductId = id; // Set current product ID
+
+      // Update basic product details
+      document.getElementById('modal-title').textContent = p.title;
+      document.getElementById('modal-desc').textContent = p.desc;
+      document.getElementById('modal-price').textContent = p.price;
+      document.getElementById('modal-cats').textContent = p.categories.join(' • ');
+
+      // Update average rating
+      const rating = getAverageRating(p);
+      document.getElementById('modal-avg-rating').innerHTML = `${rating.stars} (${rating.avg})`;
+
+      // Render reviews
+      renderReviews(p);
+
+      // Reset review form
+      document.getElementById('review-form').reset();
+
+
+      // Update Swiper
+      const wrapper = document.getElementById('swiper-wrapper'); wrapper.innerHTML='';
+      p.images.forEach(src=>{
+        const slide = document.createElement('div'); slide.className='swiper-slide';
+        slide.style.display='flex'; slide.style.alignItems='center'; slide.style.justifyContent='center';
+        slide.innerHTML = `<img src="${src}" alt="${p.title}" style="max-width:100%;max-height:100%;object-fit:contain"/>`;
+        wrapper.appendChild(slide);
+      });
+
+      backdrop.style.display='flex';
+      requestAnimationFrame(()=>{
+        if(swiperInstance) { swiperInstance.update(); } else {
+          swiperInstance = new Swiper('#swiper-root', {loop:true, pagination:{el:'.swiper-pagination',clickable:true}, navigation:{nextEl:'.swiper-button-next',prevEl:'.swiper-button-prev'}});
+        }
+      });
+    }
+
+    function closeModal(){
+      backdrop.style.display='none';
+      currentProductId = null;
+    }
+    closeModalBtn.addEventListener('click',closeModal);
+    backdrop.addEventListener('click',e=>{ if(e.target===backdrop) closeModal(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+    // ====== Review Submission Logic ======
+    document.getElementById('review-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const user = document.getElementById('review-user').value.trim() || 'Anonymous';
+        const rating = parseInt(this.querySelector('input[name="rating"]:checked').value);
+        const comment = document.getElementById('review-comment').value.trim();
+
+        if (!currentProductId || !rating) {
+            alert('Please select a star rating.');
+            return;
+        }
+
+        const product = products.find(x => x.id === currentProductId);
+        if (!product) return;
+
+        // Create new review object
+        const newReview = { user, rating, comment };
+        product.reviews.unshift(newReview); // Add to the start for most recent first
+
+        // Re-render modal details and grid view to reflect the new rating
+        openModal(currentProductId);
+        applyFilters(); // Re-render the grid to update the average rating display on the card
+
+        // Clear the form
+        this.reset();
+        alert('Thank you for your review!');
+    });
+
+    // ====== Small placeholder action for Add to cart ======
+    document.getElementById('buyBtn').addEventListener('click',()=>{
+      alert('Added to cart. Connect to your cart/checkout flow to complete the purchase.');
+    });
+
+    // Accessibility: focus trap hint (simple)
+    document.getElementById('search').focus();
+  </script>
+</body>
+</html>
